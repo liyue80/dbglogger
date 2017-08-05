@@ -1,0 +1,7 @@
+{
+    "PrintConsole": true,
+    "ConsoleSeverity": 0,
+    "PrintFile": true,
+    "FileName": "sample.log",
+    "FileSeverity": 0
+}
