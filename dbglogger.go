@@ -34,9 +34,12 @@ var defaultConfig = serverConfig{
 
 var config serverConfig
 var mutex = &sync.Mutex{}
-var filehandle *os.File
+var fileHandle *os.File
 
-const programHelpMsg string = "\nEx: dbglogger [-c <filename>]\n"
+const programHelpMsg = `
+Ex:
+  dbglogger [-c <filename>]
+  `
 
 func postMembersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -54,9 +57,9 @@ func postMembersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if filehandle != nil {
+	if fileHandle != nil {
 		if config.FileSeverity == 0 || config.FileSeverity >= m.Severity {
-			filehandle.WriteString(m.Content + "\n")
+			fileHandle.WriteString(m.Content + "\n")
 		}
 	}
 
@@ -65,22 +68,23 @@ func postMembersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadConfig() {
-	if len(os.Args) == 1 {
+	switch len(os.Args) {
+	case 1:
 		fmt.Println("Loading default setting..")
 		config.PrintConsole = defaultConfig.PrintConsole
 		config.ConsoleSeverity = defaultConfig.ConsoleSeverity
 		config.PrintFile = defaultConfig.PrintFile
 		config.FileName = defaultConfig.FileName
 		config.FileSeverity = defaultConfig.FileSeverity
-	} else if len(os.Args) == 3 {
+	case 3:
 		if os.Args[1] == "-c" {
 			file, err := os.Open(os.Args[2])
 			if err != nil {
 				log.Fatal(err)
 			}
 			defer file.Close()
-			fileinfo, _ := file.Stat()
-			data := make([]byte, fileinfo.Size())
+			fileInfo, _ := file.Stat()
+			data := make([]byte, fileInfo.Size())
 			file.Read(data)
 			fmt.Println(string(data))
 			if err = json.Unmarshal(data, &config); err != nil {
@@ -92,7 +96,7 @@ func loadConfig() {
 			fmt.Println(programHelpMsg)
 			os.Exit(1)
 		}
-	} else {
+	default:
 		fmt.Println("Options error")
 		fmt.Println(programHelpMsg)
 		os.Exit(1)
@@ -101,12 +105,12 @@ func loadConfig() {
 	// Open the log file
 	if config.PrintFile && len(config.FileName) > 0 {
 		var err error
-		filehandle, err = os.OpenFile(config.FileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		// No close this filehandle until end of process
+		fileHandle, err = os.OpenFile(config.FileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		// No close this fileHandle until end of process
 		if err != nil {
 			log.Fatal(err)
 		}
-		filehandle.WriteString("====== Debug Logger Starts ======\n")
+		fileHandle.WriteString("====== Debug Logger Starts ======\n")
 	}
 }
 
@@ -118,6 +122,8 @@ func main() {
 
 	http.Handle("/", r)
 
-	http.ListenAndServe(":27109", nil)
 	fmt.Println("Listening on port 27109")
+	if err := http.ListenAndServe(":27109", nil); err != nil {
+		log.Fatal("ListenAndServe error: ", err)
+	}
 }
