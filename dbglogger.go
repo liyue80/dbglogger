@@ -8,13 +8,14 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 )
 
 type logMessage struct {
-	Severity int
-	Content  string
+	Severity int    `json:"severity"`
+	Content  string `json:"content"`
 }
 
 type serverConfig struct {
@@ -51,15 +52,17 @@ func postMembersHandler(w http.ResponseWriter, r *http.Request) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
+	prefixTimestamp := time.Now().Format("2006-01-02 15:04:05.000")
+
 	if config.PrintConsole {
 		if config.ConsoleSeverity == 0 || config.ConsoleSeverity >= m.Severity {
-			fmt.Printf("%s\n", m.Content)
+			fmt.Printf("[%s] [%d] %s\n", prefixTimestamp, m.Severity, m.Content)
 		}
 	}
 
 	if fileHandle != nil {
 		if config.FileSeverity == 0 || config.FileSeverity >= m.Severity {
-			fileHandle.WriteString(m.Content + "\n")
+			fileHandle.WriteString(fmt.Sprintf("[%s] [%d] %s\n", prefixTimestamp, m.Severity, m.Content))
 		}
 	}
 
